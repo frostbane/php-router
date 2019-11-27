@@ -34,13 +34,21 @@ class RouterTest extends PHPUnit_Framework_TestCase
      */
     public function testMatch($router, $path, $expected)
     {
-        self::assertEquals($expected, (bool)$router->match($path));
+        $buffer = $router->match($path);
+
+        if($expected === true) {
+            $this->assertNotNull($buffer);
+        } else {
+            $this->assertNull($buffer);
+        }
     }
 
     public function testMatchWrongMethod()
     {
         $router = $this->getRouter();
-        self::assertFalse($router->match('/users', 'POST'));
+        $buffer = $router->match('/users', 'POST');
+
+        $this->assertNull($buffer);
     }
 
     public function testBasePathConfigIsSettedProperly()
@@ -48,14 +56,14 @@ class RouterTest extends PHPUnit_Framework_TestCase
         $router = new Router(new RouteCollection);
         $router->setBasePath('/webroot/');
 
-        self::assertAttributeEquals('/webroot', 'basePath', $router);
+        $this->assertAttributeEquals('/webroot', 'basePath', $router);
     }
 
     public function testMatchRouterUsingBasePath()
     {
         $collection = new RouteCollection();
         $collection->attach(new Route('/users/', array(
-            '_controller' => 'PHPRouter\Test\SomeController::usersCreate',
+            '_controller' => '\PHPRouter\Test\Fixtures\SomeController::usersCreate',
             'methods' => 'GET'
         )));
 
@@ -64,7 +72,9 @@ class RouterTest extends PHPUnit_Framework_TestCase
 
         foreach ($this->serverProvider() as $server) {
             $_SERVER = $server;
-            self::assertTrue((bool)$router->matchCurrentRequest());
+            $buffer = $router->matchCurrentRequest();
+
+            $this->assertNotNull($buffer);
         }
     }
 
@@ -90,7 +100,7 @@ class RouterTest extends PHPUnit_Framework_TestCase
         $route = new Route(
             '/page/:page_id',
             array(
-                '_controller' => 'PHPRouter\Test\SomeController::page',
+                '_controller' => '\PHPRouter\Test\Fixtures\SomeController::page',
                 'methods' => 'GET'
             )
         );
@@ -98,9 +108,9 @@ class RouterTest extends PHPUnit_Framework_TestCase
         $collection->attachRoute($route);
 
         $router = new Router($collection);
-        self::assertEquals(
-            array(array('page_id' => 'MySuperPage')),
-            $router->match('/page/MySuperPage')->getParameters()
+        $this->assertEquals(
+            array('page_id' => 'MySuperPage'),
+            $router->getRoute('/page/MySuperPage')->getParameters()
         );
     }
 
@@ -110,7 +120,7 @@ class RouterTest extends PHPUnit_Framework_TestCase
         $route = new Route(
             '/js/:filename.js',
             array(
-                '_controller' => 'PHPRouter\Test\SomeController::dynamicFilterUrlMatch',
+                '_controller' => '\PHPRouter\Test\Fixtures\SomeController::dynamicFilterUrlMatch',
                 'methods' => 'GET',
             )
         );
@@ -118,19 +128,19 @@ class RouterTest extends PHPUnit_Framework_TestCase
         $collection->attachRoute($route);
 
         $router = new Router($collection);
-        self::assertEquals(
-            array(array('filename' => 'someJsFile')),
-            $router->match('/js/someJsFile.js')->getParameters()
+        $this->assertEquals(
+            array('filename' => 'someJsFile'),
+            $router->getRoute('/js/someJsFile.js')->getParameters()
         );
 
-        self::assertEquals(
-            array(array('filename' => 'someJsFile.min')),
-            $router->match('/js/someJsFile.min.js')->getParameters()
+        $this->assertEquals(
+            array('filename' => 'someJsFile.min'),
+            $router->getRoute('/js/someJsFile.min.js')->getParameters()
         );
 
-        self::assertEquals(
-            array(array('filename' => 'someJsFile.min.js')),
-            $router->match('/js/someJsFile.min.js.js')->getParameters()
+        $this->assertEquals(
+            array('filename' => 'someJsFile.min.js'),
+            $router->getRoute('/js/someJsFile.min.js.js')->getParameters()
         );
     }
 
@@ -138,14 +148,14 @@ class RouterTest extends PHPUnit_Framework_TestCase
     {
         $config = Config::loadFromFile(__DIR__ . '/../../Fixtures/router.yaml');
         $router = Router::parseConfig($config);
-        self::assertAttributeEquals($config['base_path'], 'basePath', $router);
+        $this->assertAttributeEquals($config['base_path'], 'basePath', $router);
     }
 
     public function testGenerate()
     {
         $router = $this->getRouter();
-        self::assertSame('/users/', $router->generate('users'));
-        self::assertSame('/user/123', $router->generate('user', array('id' => 123)));
+        $this->assertSame('/users/', $router->generate('users'));
+        $this->assertSame('/user/123', $router->generate('user', array('id' => 123)));
     }
 
     /**
@@ -154,7 +164,7 @@ class RouterTest extends PHPUnit_Framework_TestCase
     public function testGenerateNotExistent()
     {
         $router = $this->getRouter();
-        self::assertSame('/notExists/', $router->generate('notThisRoute'));
+        $this->assertSame('/notExists/', $router->generate('notThisRoute'));
     }
 
     /**
@@ -164,17 +174,17 @@ class RouterTest extends PHPUnit_Framework_TestCase
     {
         $collection = new RouteCollection();
         $collection->attachRoute(new Route('/users/', array(
-            '_controller' => 'PHPRouter\Test\SomeController::usersCreate',
+            '_controller' => '\PHPRouter\Test\Fixtures\SomeController::usersCreate',
             'methods' => 'GET',
             'name' => 'users'
         )));
         $collection->attachRoute(new Route('/user/:id', array(
-            '_controller' => 'PHPRouter\Test\SomeController::user',
+            '_controller' => '\PHPRouter\Test\Fixtures\SomeController::user',
             'methods' => 'GET',
             'name' => 'user'
         )));
         $collection->attachRoute(new Route('/', array(
-            '_controller' => 'PHPRouter\Test\SomeController::indexAction',
+            '_controller' => '\PHPRouter\Test\Fixtures\SomeController::indexAction',
             'methods' => 'GET',
             'name' => 'index'
         )));

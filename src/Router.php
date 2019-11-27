@@ -1,23 +1,4 @@
 <?php
-/**
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
- * CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
- * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
- * DAMAGE.
- *
- * This software consists of voluntary contributions made by many
- * individuals and is licensed under the MIT license.
- */
 
 namespace PHPRouter;
 
@@ -134,7 +115,7 @@ class Router
 
         foreach ($this->routes->all() as $routes) {
             // compare server request method with route's allowed http methods
-            if ( !in_array($requestMethod, (array)$routes->getMethods(), true)) {
+            if (!in_array($requestMethod, (array)$routes->getMethods(), true)) {
                 continue;
             }
 
@@ -145,7 +126,7 @@ class Router
             $route   = rtrim($routes->getRegex(), '/');
             $pattern = '@^' . preg_quote($this->basePath) . $route . '/?$@i';
 
-            if ( !preg_match($pattern, $requestUrl, $matches)) {
+            if (!preg_match($pattern, $requestUrl, $matches)) {
                 continue;
             }
 
@@ -179,6 +160,20 @@ class Router
         );
     }
 
+    public function getRoute($requestUrl, $requestMethod = RequestMethodInterface::METHOD_GET)
+    {
+        /** @var Route $route */
+        list($route, $params) = $this->findRoute($requestUrl, $requestMethod);
+
+        if ($route !== null) {
+            $route->setParameters($params);
+
+            return $route;
+        } else {
+            return null;
+        }
+    }
+
     /**
      * Match given request _url and request method and see if a route
      * has been defined for it If so, return route's target If called
@@ -187,7 +182,7 @@ class Router
      * @param string $requestUrl
      * @param string $requestMethod
      *
-     * @return bool|Route
+     * @return null|Route
      */
     public function match($requestUrl, $requestMethod = RequestMethodInterface::METHOD_GET)
     {
@@ -196,9 +191,10 @@ class Router
 
         if ($route !== null) {
             $route->setParameters($params);
+
             return $route->dispatch();
         } else {
-            return;
+            return null;
         }
     }
 
@@ -215,7 +211,7 @@ class Router
     public function generate($routeName, array $params = array())
     {
         // Check if route exists
-        if ( !isset($this->namedRoutes[$routeName])) {
+        if (!isset($this->namedRoutes[$routeName])) {
             throw new Exception("No route with the name $routeName has been found.");
         }
 

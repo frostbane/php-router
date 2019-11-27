@@ -1,16 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
-<phpunit
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:noNamespaceSchemaLocation="http://schema.phpunit.de/4.8/phpunit.xsd"
-         backupGlobals="true"
+<phpunit backupGlobals="false"
          backupStaticAttributes="false"
+         bootstrap="vendor/autoload.php"
          colors="true"
          convertErrorsToExceptions="true"
          convertNoticesToExceptions="true"
          convertWarningsToExceptions="true"
-         bootstrap="tests/Bootstrap.php">
-
+         processIsolation="false"
+         stopOnFailure="false">
     <testsuites>
         <testsuite name="PHP Router">
             <directory>tests</directory>
@@ -21,7 +18,7 @@
         <whitelist>
             <directory>./</directory>
             <exclude>
-                <directory>./tests</directory>
+                <directory>./tests/Fixtures</directory>
                 <directory>./vendor</directory>
             </exclude>
         </whitelist>
@@ -29,7 +26,7 @@
 
     <logging>
         <log type="coverage-text" target="php://stdout" showUncoveredFiles="true"/>
-        <log type="coverage-clover" target="build/logs/clover.xml"/>
+        <log type="coverage-clover" target="logs/clover.xml"/>
     </logging>
 
 </phpunit>
