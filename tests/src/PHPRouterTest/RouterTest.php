@@ -34,15 +34,21 @@ class RouterTest extends PHPUnit_Framework_TestCase
      */
     public function testMatch($router, $path, $expected)
     {
-        $result = $router->match($path);
+        $buffer = $router->match($path);
 
-        $this->assertEquals($expected, $result);
+        if($expected === true) {
+            $this->assertNotNull($buffer);
+        } else {
+            $this->assertNull($buffer);
+        }
     }
 
     public function testMatchWrongMethod()
     {
         $router = $this->getRouter();
-        $this->assertFalse($router->match('/users', 'POST'));
+        $buffer = $router->match('/users', 'POST');
+
+        $this->assertNull($buffer);
     }
 
     public function testBasePathConfigIsSettedProperly()
@@ -66,7 +72,9 @@ class RouterTest extends PHPUnit_Framework_TestCase
 
         foreach ($this->serverProvider() as $server) {
             $_SERVER = $server;
-            $this->assertTrue((bool)$router->matchCurrentRequest());
+            $buffer = $router->matchCurrentRequest();
+
+            $this->assertNotNull($buffer);
         }
     }
 
@@ -101,8 +109,8 @@ class RouterTest extends PHPUnit_Framework_TestCase
 
         $router = new Router($collection);
         $this->assertEquals(
-            array(array('page_id' => 'MySuperPage')),
-            $router->match('/page/MySuperPage')->getParameters()
+            array('page_id' => 'MySuperPage'),
+            $router->getRoute('/page/MySuperPage')->getParameters()
         );
     }
 
@@ -121,18 +129,18 @@ class RouterTest extends PHPUnit_Framework_TestCase
 
         $router = new Router($collection);
         $this->assertEquals(
-            array(array('filename' => 'someJsFile')),
-            $router->match('/js/someJsFile.js')->getParameters()
+            array('filename' => 'someJsFile'),
+            $router->getRoute('/js/someJsFile.js')->getParameters()
         );
 
         $this->assertEquals(
-            array(array('filename' => 'someJsFile.min')),
-            $router->match('/js/someJsFile.min.js')->getParameters()
+            array('filename' => 'someJsFile.min'),
+            $router->getRoute('/js/someJsFile.min.js')->getParameters()
         );
 
         $this->assertEquals(
-            array(array('filename' => 'someJsFile.min.js')),
-            $router->match('/js/someJsFile.min.js.js')->getParameters()
+            array('filename' => 'someJsFile.min.js'),
+            $router->getRoute('/js/someJsFile.min.js.js')->getParameters()
         );
     }
 
