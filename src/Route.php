@@ -180,6 +180,7 @@ class Route
             return null;
         }
 
+        // todo use reflection
         $instance = new $class();
 
         if (empty($action[1]) || trim($action[1]) === '') {

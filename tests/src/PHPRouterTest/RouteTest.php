@@ -29,7 +29,7 @@ class RouteTest extends PHPUnit_Framework_TestCase
         $this->routeWithParameters = new Route(
             '/page/:page_id',
             array(
-                '_controller' => 'PHPRouter\Test\SomeController::page',
+                '_controller' => '\PHPRouter\Test\Fixtures\SomeController::page',
                 'methods' => array(
                     'GET'
                 ),
