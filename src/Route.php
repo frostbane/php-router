@@ -71,6 +71,7 @@ class Route
         $this->name       = isset($config['name']) ? $config['name'] : null;
         $this->parameters = isset($config['parameters']) ? $config['parameters'] : array();
         $action           = explode('::', $this->config['_controller']);
+        $this->class      = isset($action[0]) ? $action[0] : null;
         $this->action     = isset($action[1]) ? $action[1] : null;
     }
 
@@ -180,10 +181,9 @@ class Route
         return $this->config['_controller'];
     }
 
-    public function dispatch()
+    public function dispatch($instance = null)
     {
-        $action   = explode('::', $this->config['_controller']);
-        $instance = new $action[0]();
+        is_null($instance) and $instance = new $this->class();
 
         if ($this->parametersByName) {
             $this->parameters = array($this->parameters);
@@ -191,11 +191,11 @@ class Route
 
         ob_start();
 
-        if (empty($action[1]) || trim($action[1]) === '') {
+        if (empty($this->action) || trim($this->action) === '') {
             // __invoke on a class
             call_user_func_array($instance, $this->parameters);
         } else {
-            call_user_func_array(array($instance, $action[1]), $this->parameters);
+            call_user_func_array(array($instance, $this->action), $this->parameters);
         }
 
         $result = ob_get_clean();
