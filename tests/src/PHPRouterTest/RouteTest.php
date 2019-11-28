@@ -21,6 +21,10 @@ class RouteTest extends PHPUnit_Framework_TestCase
                 'methods'     => array(
                     'GET',
                 ),
+                'filters'     => array(
+                    ":user" => "([A-Z][a-z]+)",
+                    ":id"   => "([1-9]\\d)",
+                ),
             )
         );
 
@@ -126,33 +130,36 @@ class RouteTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($param, $this->routeWithParameters->getParameters());
     }
 
-    public function testGetRegex()
+    public function testGetRegexNoFilters()
     {
-        $regex = $this->routeWithParameters->getRegex();
+        $filters = $this->routeWithParameters->getFilters();
+        $regex   = $this->routeWithParameters->getRegex();
 
+        $this->assertEmpty($filters);
         $this->assertEquals("/page/([\\w-%]+)/([\\w-%]+)", $regex);
     }
 
     public function testGetFilterRegex()
     {
         $filters = array(
-            ":user" => "([A-Z][a-z]+)",
-            ":id"   => "([1-9]\\d)",
+            ":page_id"   => "([\\d+])",
+            ":page_size" => "([1-9]\\d)",
         );
 
-        $this->routeUsing__invoke->setFilters($filters);
+        $this->routeWithParameters->setFilters($filters);
 
-        $regex = $this->routeUsing__invoke->getRegex();
-
-        $this->assertEquals("/home/([A-Z][a-z]+)/([1-9]\\d)", $regex);
+        $this->assertEquals("/page/{$filters[':page_id']}/{$filters[':page_size']}",
+                            $this->routeWithParameters->getRegex());
+        $this->assertEquals("/home/([A-Z][a-z]+)/([1-9]\\d)",
+                            $this->routeUsing__invoke->getRegex());
     }
 
-    public function testDispatch()
+    public function testDispatch__invoke()
     {
         $message = "welcome";
         $param   = array(
-            "id"   => 1,
             "user" => "akane",
+            "id"   => 1,
         );
 
         $this->routeUsing__invoke->setParameters($param);
@@ -164,5 +171,42 @@ class RouteTest extends PHPUnit_Framework_TestCase
         $instance->message = $message;
 
         $this->assertEquals("$message {$param['id']}:{$param['user']}", $this->routeUsing__invoke->dispatch($instance));
+    }
+
+    public function testDispatch()
+    {
+        $buffer = $this->routeWithParameters->dispatch();
+
+        var_dump($buffer);
+    }
+
+    public function testParameterSorting()
+    {
+        $route = new Route(
+            '/',
+            array(
+                '_controller' => '\PHPRouter\Test\Fixtures\SomeController::parameterSort',
+                'methods'     => array(
+                    'GET',
+                ),
+            )
+        );
+
+        $params = array(
+            "group_name" => "fi",
+            "id"         => 1,
+            "page_name"  => "profile",
+            "user"       => "akane",
+            "tag_name"   => "m",
+            "flag"       => 2,
+            "admin"      => 0,
+        );
+
+        // route is expected to arrange the params according to the function arguments
+        // and fill the missing ones with the remaining unmatched parameters
+        $expected = implode(",", array(1, "fi", "akane", "profile", "m", 2, 0));
+
+        $route->setParameters($params);
+        $this->assertEquals($expected, $route->dispatch());
     }
 }
