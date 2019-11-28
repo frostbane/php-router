@@ -1,20 +1,5 @@
 <?php
-/**
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * This software consists of voluntary contributions made by many individuals
- * and is licensed under the MIT license.
- */
+
 namespace PHPRouterTest\Test;
 
 use PHPRouter\Config;
@@ -34,21 +19,24 @@ class RouterTest extends PHPUnit_Framework_TestCase
      */
     public function testMatch($router, $path, $expected)
     {
+        if ($expected === false) {
+            $this->setExpectedException("\DomainException");
+        }
+
         $buffer = $router->match($path);
 
-        if($expected === true) {
+        if ($expected === true) {
             $this->assertNotNull($buffer);
-        } else {
-            $this->assertNull($buffer);
         }
     }
 
     public function testMatchWrongMethod()
     {
         $router = $this->getRouter();
-        $buffer = $router->match('/users', 'POST');
 
-        $this->assertNull($buffer);
+        $this->setExpectedException("\DomainException");
+
+        $router->match('/users', 'POST');
     }
 
     public function testBasePathConfigIsSettedProperly()
@@ -64,7 +52,7 @@ class RouterTest extends PHPUnit_Framework_TestCase
         $collection = new RouteCollection();
         $collection->attach(new Route('/users/', array(
             '_controller' => '\PHPRouter\Test\Fixtures\SomeController::usersCreate',
-            'methods' => 'GET'
+            'methods'     => 'GET',
         )));
 
         $router = new Router($collection);
@@ -72,10 +60,101 @@ class RouterTest extends PHPUnit_Framework_TestCase
 
         foreach ($this->serverProvider() as $server) {
             $_SERVER = $server;
-            $buffer = $router->matchCurrentRequest();
+            $buffer  = $router->matchCurrentRequest();
 
             $this->assertNotNull($buffer);
         }
+    }
+
+    public function testMatchRouterUsingMethod()
+    {
+        $collection = new RouteCollection();
+
+        $collection->attachRoute(new Route('/user', array(
+            '_controller' => '\PHPRouter\Test\Fixtures\SomeController::indexAction',
+            'methods'     => 'GET',
+            'name'        => 'index',
+        )));
+        $collection->attachRoute(new Route('/user', array(
+            '_controller' => '\PHPRouter\Test\Fixtures\SomeController::usersCreate',
+            'methods'     => 'POST',
+            'name'        => 'register',
+        )));
+
+        $router = new Router($collection);
+
+        $_SERVER["REQUEST_URI"]    = "/user";
+        $_SERVER["REQUEST_METHOD"] = "POST";
+
+        $buffer = $router->matchCurrentRequest();
+
+        unset($_SERVER["REQUEST_URI"]);
+        unset($_SERVER["REQUEST_METHOD"]);
+
+        $this->assertEquals("register user", $buffer);
+
+        $_SERVER["REQUEST_URI"]    = "/user";
+        $_SERVER["REQUEST_METHOD"] = "GET";
+
+        $buffer = $router->matchCurrentRequest();
+
+        unset($_SERVER["REQUEST_URI"]);
+        unset($_SERVER["REQUEST_METHOD"]);
+
+        $this->assertEquals("index", $buffer);
+    }
+
+    public function testGetRouteUsingMethod()
+    {
+        $collection = new RouteCollection();
+
+        $collection->attachRoute(new Route('/', array(
+            '_controller' => '\PHPRouter\Test\Fixtures\CustomController::index',
+            'methods'     => 'GET',
+            'name'        => 'default',
+        )));
+        $collection->attachRoute(new Route('/', array(
+            '_controller' => '\PHPRouter\Test\Fixtures\CustomController::home',
+            'methods'     => 'POST',
+            'name'        => 'home',
+        )));
+
+        $router = new Router($collection);
+
+        $_SERVER["REQUEST_URI"]    = "/";
+        $_SERVER["REQUEST_METHOD"] = "POST";
+
+        $route    = null;
+        $hasRoute = $router->requestHasValidRoute();
+
+        if ($hasRoute) {
+            $route = $router->getRequestRoute();
+        }
+
+        unset($_SERVER["REQUEST_URI"]);
+        unset($_SERVER["REQUEST_METHOD"]);
+
+        $this->assertTrue($hasRoute);
+        $this->assertNotNull($route);
+        $this->assertEquals("home", $route->getAction());
+
+        $_SERVER["REQUEST_URI"]    = "/";
+        $_SERVER["REQUEST_METHOD"] = "GET";
+
+        $route    = null;
+        $hasRoute = $router->requestHasValidRoute();
+
+        if ($hasRoute) {
+            $route = $router->getRequestRoute();
+        }
+
+        unset($_SERVER["REQUEST_URI"]);
+        unset($_SERVER["REQUEST_METHOD"]);
+
+        $this->assertTrue($hasRoute);
+        $this->assertNotNull($route);
+        $this->assertEquals("index", $route->getAction());
+
     }
 
     private function serverProvider()
@@ -83,13 +162,13 @@ class RouterTest extends PHPUnit_Framework_TestCase
         return array(
             array(
                 'REQUEST_METHOD' => 'GET',
-                'REQUEST_URI' => '/localhost/webroot/users/',
-                'SCRIPT_NAME' => 'index.php'
+                'REQUEST_URI'    => '/localhost/webroot/users/',
+                'SCRIPT_NAME'    => 'index.php',
             ),
             array(
                 'REQUEST_METHOD' => 'GET',
-                'REQUEST_URI' => '/localhost/webroot/users/?foo=bar&bar=foo',
-                'SCRIPT_NAME' => 'index.php'
+                'REQUEST_URI'    => '/localhost/webroot/users/?foo=bar&bar=foo',
+                'SCRIPT_NAME'    => 'index.php',
             ),
         );
     }
@@ -97,11 +176,11 @@ class RouterTest extends PHPUnit_Framework_TestCase
     public function testGetParamsInsideControllerMethod()
     {
         $collection = new RouteCollection();
-        $route = new Route(
+        $route      = new Route(
             '/page/:page_id',
             array(
                 '_controller' => '\PHPRouter\Test\Fixtures\SomeController::page',
-                'methods' => 'GET'
+                'methods'     => 'GET',
             )
         );
         $route->setFilters(array('page_id' => '([a-zA-Z]+)'), true);
@@ -117,11 +196,11 @@ class RouterTest extends PHPUnit_Framework_TestCase
     public function testParamsWithDynamicFilterMatch()
     {
         $collection = new RouteCollection();
-        $route = new Route(
+        $route      = new Route(
             '/js/:filename.js',
             array(
                 '_controller' => '\PHPRouter\Test\Fixtures\SomeController::dynamicFilterUrlMatch',
-                'methods' => 'GET',
+                'methods'     => 'GET',
             )
         );
 
@@ -170,6 +249,72 @@ class RouterTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * this is for controllers that have a custom constructor, or
+     * controllers that need to be injected before calling dispatch
+     */
+    public function testMatchToCustomController()
+    {
+        $collection = new RouteCollection();
+
+        $collection->attachRoute(new Route('/', array(
+            '_controller' => '\PHPRouter\Test\Fixtures\CustomController::index',
+            'methods'     => 'POST',
+            'name'        => 'default',
+        )));
+
+        $router = new Router($collection);
+
+        $_SERVER["REQUEST_URI"]    = "/";
+        $_SERVER["REQUEST_METHOD"] = "POST";
+
+        $route    = null;
+        $hasRoute = $router->requestHasValidRoute();
+
+        if ($hasRoute) {
+            $route = $router->getRequestRoute();
+        }
+
+        unset($_SERVER["REQUEST_URI"]);
+        unset($_SERVER["REQUEST_METHOD"]);
+
+        $this->assertTrue($hasRoute);
+        $this->assertNotNull($route);
+
+        $class    = $route->getClass();
+        $instance = new $class("akane");
+        // in real life applications, this is when you do you Dance Instructor gayness magic
+
+        $this->assertInstanceOf("\PHPRouter\Test\Fixtures\CustomController", $instance);
+
+        $result = $route->dispatch($instance);
+
+        $this->assertEquals("index akane", $result);
+    }
+
+    public function testRoutePrivate()
+    {
+        $collection = new RouteCollection();
+
+        $collection->attachRoute(new Route('/', array(
+            '_controller' => '\PHPRouter\Test\Fixtures\SomeController::privateMethod',
+            'methods'     => 'GET',
+            'name'        => 'default',
+        )));
+
+        $router = new Router($collection);
+
+        $_SERVER["REQUEST_URI"]    = "/";
+        $_SERVER["REQUEST_METHOD"] = "GET";
+
+        $hasValidRoute = $router->requestHasValidRoute();
+
+        unset($_SERVER["REQUEST_URI"]);
+        unset($_SERVER["REQUEST_METHOD"]);
+
+        $this->assertFalse($hasValidRoute);
+    }
+
+    /**
      * @return Router
      */
     private function getRouter()
@@ -177,18 +322,20 @@ class RouterTest extends PHPUnit_Framework_TestCase
         $collection = new RouteCollection();
         $collection->attachRoute(new Route('/users/', array(
             '_controller' => '\PHPRouter\Test\Fixtures\SomeController::usersCreate',
-            'methods' => 'GET',
-            'name' => 'users'
+            'methods'     => 'GET',
+            'name'        => 'users',
         )));
+
         $collection->attachRoute(new Route('/user/:id', array(
             '_controller' => '\PHPRouter\Test\Fixtures\SomeController::user',
-            'methods' => 'GET',
-            'name' => 'user'
+            'methods'     => 'GET',
+            'name'        => 'user',
         )));
+
         $collection->attachRoute(new Route('/', array(
             '_controller' => '\PHPRouter\Test\Fixtures\SomeController::indexAction',
-            'methods' => 'GET',
-            'name' => 'index'
+            'methods'     => 'GET',
+            'name'        => 'index',
         )));
 
         return new Router($collection);
