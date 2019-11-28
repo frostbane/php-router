@@ -48,9 +48,9 @@ class Router
     private function getRequestUrlAndMethod()
     {
         $requestMethod = (
-            isset($_POST['_method'])
-            && ($_method = strtoupper($_POST['_method']))
-            && in_array($_method, array(RequestMethodInterface::METHOD_PUT, RequestMethodInterface::METHOD_DELETE), true)
+            isset($_POST['_method']) &&
+            ($_method = strtoupper($_POST['_method'])) &&
+            in_array($_method, array(RequestMethodInterface::METHOD_PUT, RequestMethodInterface::METHOD_DELETE), true)
         ) ? $_method : $_SERVER['REQUEST_METHOD'];
 
         $requestUrl = $_SERVER['REQUEST_URI'];
@@ -114,7 +114,7 @@ class Router
         $params     = array();
 
         // must be unit testing
-        if($currentDir === "." || "..") {
+        if ($currentDir === "." || "..") {
             $currentDir = "";
         }
 
@@ -165,6 +165,13 @@ class Router
         );
     }
 
+    public function getRequestRoute()
+    {
+        list($requestMethod, $requestUrl) = $this->getRequestUrlAndMethod();
+
+        return $this->getRoute($requestUrl, $requestMethod);
+    }
+
     public function getRoute($requestUrl, $requestMethod = RequestMethodInterface::METHOD_GET)
     {
         /** @var Route $route */
@@ -192,14 +199,12 @@ class Router
     public function match($requestUrl, $requestMethod = RequestMethodInterface::METHOD_GET)
     {
         /** @var Route $route */
-        list($route, $params) = $this->findRoute($requestUrl, $requestMethod);
+        $route = $this->getRoute($requestUrl, $requestMethod);
 
         if ($route !== null) {
-            $route->setParameters($params);
-
             return $route->dispatch();
         } else {
-            return null;
+            throw new \DomainException("No route found for $requestMethod '$requestUrl'");
         }
     }
 

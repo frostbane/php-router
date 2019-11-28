@@ -57,12 +57,12 @@ class Route
     private $class;
 
     /**
-     * @param       $resource
-     * @param array $config
+     * @param string $pathInfo
+     * @param array  $config
      */
-    public function __construct($resource, array $config)
+    public function __construct($pathInfo, array $config)
     {
-        $this->url        = $resource;
+        $this->url        = $pathInfo;
         $this->config     = $config;
         $this->methods    = isset($config['methods']) ? (array)$config['methods'] : array();
         $this->target     = isset($config['target']) ? $config['target'] : null;
@@ -177,8 +177,14 @@ class Route
         }
 
         try {
-            $classRexl->getMethod($method);
+            $methRexl = $classRexl->getMethod($method);
         } catch (\ReflectionException $ex) {
+            return null;
+        }
+
+        // use only public methods
+        // to avoid calling inherited protected methods
+        if(!$methRexl->isPublic()) {
             return null;
         }
 
