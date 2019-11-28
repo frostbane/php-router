@@ -92,9 +92,9 @@ class Router
             return false;
         }
 
-        $action = $route->getValidRouteAction();
+        $controller = $route->getValidController();
 
-        return $action !== null;
+        return $controller !== null;
     }
 
     /**
@@ -112,6 +112,11 @@ class Router
         $currentDir = dirname($_SERVER['SCRIPT_NAME']);
         $foundRoute = null;
         $params     = array();
+
+        // must be unit testing
+        if($currentDir === "." || "..") {
+            $currentDir = "";
+        }
 
         foreach ($this->routes->all() as $routes) {
             // compare server request method with route's allowed http methods

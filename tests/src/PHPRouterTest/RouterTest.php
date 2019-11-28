@@ -124,10 +124,12 @@ class RouterTest extends PHPUnit_Framework_TestCase
                 'methods' => 'GET',
             )
         );
+
         $route->setFilters(array(':filename' => '([[:alnum:]\.]+)'), true);
         $collection->attachRoute($route);
 
         $router = new Router($collection);
+
         $this->assertEquals(
             array('filename' => 'someJsFile'),
             $router->getRoute('/js/someJsFile.js')->getParameters()

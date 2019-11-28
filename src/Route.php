@@ -42,14 +42,7 @@ class Route
     private $parameters = array();
 
     /**
-     * Set named parameters to target method
-     * @example [ [0] => [ ["link_id"] => "12312" ] ]
-     * @var bool
-     */
-    private $parametersByName;
-
-    /**
-     * @var string
+     * @var null|string
      */
     private $action;
 
@@ -57,6 +50,11 @@ class Route
      * @var array
      */
     private $config;
+
+    /**
+     * @var null|string
+     */
+    private $class;
 
     /**
      * @param       $resource
@@ -70,7 +68,9 @@ class Route
         $this->target     = isset($config['target']) ? $config['target'] : null;
         $this->name       = isset($config['name']) ? $config['name'] : null;
         $this->parameters = isset($config['parameters']) ? $config['parameters'] : array();
-        $action           = explode('::', $this->config['_controller']);
+        $this->filters    = isset($config['filters']) ? $config['filters'] : array();
+        $action           = isset ($this->config['_controller']) ? explode('::', $this->config['_controller']) : array();
+        $this->class      = isset($action[0]) ? $action[0] : null;
         $this->action     = isset($action[1]) ? $action[1] : null;
     }
 
@@ -121,21 +121,27 @@ class Route
         $this->name = (string)$name;
     }
 
-    public function setFilters(array $filters, $parametersByName = false)
+    public function setFilters(array $filters)
     {
-        $this->filters          = $filters;
-        $this->parametersByName = $parametersByName;
+        $this->filters = $filters;
+    }
+
+    public function getFilters()
+    {
+        return $this->filters;
     }
 
     public function getRegex()
     {
-        return preg_replace_callback('/(:\w+)/', array(&$this, 'substituteFilter'), $this->url);
+        $url = preg_quote($this->url);
+
+        return preg_replace_callback('/(\\\\(:\w+))/', array(&$this, 'substituteFilter'), $url);
     }
 
     private function substituteFilter($matches)
     {
-        if (isset($matches[1], $this->filters[$matches[1]])) {
-            return $this->filters[$matches[1]];
+        if (isset($matches[1], $this->filters[$matches[2]])) {
+            return $this->filters[$matches[2]];
         }
 
         return '([\w-%]+)';
@@ -151,17 +157,16 @@ class Route
         $this->parameters = $parameters;
     }
 
-    public function getValidRouteAction()
+    public function getValidController()
     {
-        $action = explode('::', $this->config['_controller']);
-        $class  = @$action[0];
-        $method = @$action[1];
+        $class  = $this->class;
+        $method = $this->action;
 
-        if ( !class_exists($class)) {
+        if (!class_exists($class)) {
             return null;
         }
 
-        if (empty($action[1]) || trim($action[1]) === '') {
+        if (empty($method) || trim($method) === '') {
             $method = "__invoke";
         }
 
@@ -180,31 +185,94 @@ class Route
         return $this->config['_controller'];
     }
 
-    public function dispatch()
+    /**
+     * sort parameters according the the method's arguments
+     *
+     * @return array
+     *
+     * @throws \ReflectionException
+     */
+    private function sortParameters()
     {
-        $action   = explode('::', $this->config['_controller']);
-        $instance = new $action[0]();
+        $class      = $this->class;
+        $method     = $this->action;
+        $parameters = $this->parameters;
+        $arguments  = array();
 
-        if ($this->parametersByName) {
-            $this->parameters = array($this->parameters);
+        if (empty($method) || trim($method) === '') {
+            $method = "__invoke";
         }
+
+        $rexl = new \ReflectionMethod($class, $method);
+
+        foreach ($rexl->getParameters() as $methArgs) {
+            $arg = $methArgs->getName();
+
+            if (array_key_exists($arg, $parameters)) {
+                $arguments[$arg] = $parameters[$arg];
+
+                unset($parameters[$arg]);
+            } else {
+                // argument is not in the parameters
+                $arguments[$arg] = null;
+            }
+        }
+
+        if (count($parameters) > 0) {
+            // fill the unset arguments
+            foreach ($arguments as $arg => &$v) {
+                if ($v === null) {
+                    //$key = array_keys($parameters)[0];
+
+                    $v = array_shift($parameters);
+                }
+
+                if (count($parameters) <= 0) {
+                    break;
+                }
+            }
+        }
+
+        // merge the remaining parameters
+        return array_merge($arguments, $parameters);
+    }
+
+    private function canBeEchoed($var)
+    {
+        return method_exists($var, '__toString') || (is_scalar($var) && !is_null($var));
+    }
+
+    public function dispatch($instance = null)
+    {
+        is_null($instance) and $instance = new $this->class();
+
+        $param = $this->sortParameters();
 
         ob_start();
 
-        if (empty($action[1]) || trim($action[1]) === '') {
+        if (empty($this->action) || trim($this->action) === '') {
             // __invoke on a class
-            call_user_func_array($instance, $this->parameters);
+            $result = call_user_func_array($instance, $param);
         } else {
-            call_user_func_array(array($instance, $action[1]), $this->parameters);
+            $result = call_user_func_array(array($instance, $this->action), $param);
         }
 
-        $result = ob_get_clean();
+        if ($this->canBeEchoed($result)) {
+            echo $result;
+        }
 
-        return $result;
+        $buffer = ob_get_clean();
+
+        return $buffer;
     }
 
     public function getAction()
     {
         return $this->action;
+    }
+
+    public function getClass()
+    {
+        return $this->class;
     }
 }
