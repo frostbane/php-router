@@ -4,12 +4,18 @@ namespace PHPRouter\Test\Fixtures;
 
 final class SomeController
 {
+    private function privateMethod()
+    {
+    }
+
     public function usersCreate()
     {
+        echo "register user";
     }
 
     public function indexAction()
     {
+        echo "index";
     }
 
     public function user()

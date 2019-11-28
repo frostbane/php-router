@@ -12,6 +12,7 @@ class RouteTest extends PHPUnit_Framework_TestCase
     private $routeUsing__invoke;
     private $routeWithParameters;
     private $routeInvalid;
+    private $routeWithPrivateMethod;
 
     protected function setUp()
     {
@@ -25,6 +26,16 @@ class RouteTest extends PHPUnit_Framework_TestCase
                 'filters'     => array(
                     ":user" => "([A-Z][a-z]+)",
                     ":id"   => "([1-9]\\d)",
+                ),
+            )
+        );
+
+        $this->routeWithPrivateMethod = new Route(
+            '/home/:user/:id',
+            array(
+                '_controller' => '\PHPRouter\Test\Fixtures\SomeController::privateMethod',
+                'methods'     => array(
+                    'GET',
                 ),
             )
         );
@@ -121,6 +132,11 @@ class RouteTest extends PHPUnit_Framework_TestCase
         $this->assertEquals("\PHPRouter\Test\Fixtures\SomeController::page",
                             $this->routeWithParameters->getValidController());
         $this->assertNull($this->routeInvalid->getValidController());
+    }
+
+    public function testGetValidController_privateMethod()
+    {
+        $this->assertNull($this->routeWithPrivateMethod->getValidController());
     }
 
     public function testSetGetParameters()
@@ -220,6 +236,8 @@ class RouteTest extends PHPUnit_Framework_TestCase
         $rexl->setAccessible(true);
 
         $provider = array(
+            array(true, true, "1"),
+            array(true, false, ""),
             array(true, 1, "1"),
             array(true, 0, "0"),
             array(true, 1.23, "1.23"),
@@ -228,6 +246,7 @@ class RouteTest extends PHPUnit_Framework_TestCase
             array(true, new PrintableDate(), "to string"),
             array(false, null),
             array(false, array()),
+            array(false, date_create()),
         );
 
         foreach ($provider as $case) {
