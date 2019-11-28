@@ -4,6 +4,7 @@ namespace PHPRouterTest\Test;
 
 use PHPRouter\Route;
 use PHPRouter\Test\Fixtures\InvokableController;
+use PHPRouter\Test\Fixtures\PrintableDate;
 use PHPUnit_Framework_TestCase;
 
 class RouteTest extends PHPUnit_Framework_TestCase
@@ -177,7 +178,7 @@ class RouteTest extends PHPUnit_Framework_TestCase
     {
         $buffer = $this->routeWithParameters->dispatch();
 
-        var_dump($buffer);
+        $this->assertEquals("", $buffer);
     }
 
     public function testParameterSorting()
@@ -208,5 +209,43 @@ class RouteTest extends PHPUnit_Framework_TestCase
 
         $route->setParameters($params);
         $this->assertEquals($expected, $route->dispatch());
+    }
+
+    public function testCanBeEchoed()
+    {
+        $route = new Route("", array());
+
+        $rexl = new \ReflectionMethod($route, "canBeEchoed");
+
+        $rexl->setAccessible(true);
+
+        $provider = array(
+            array(true, 1, "1"),
+            array(true, 0, "0"),
+            array(true, 1.23, "1.23"),
+            array(true, 0.45, "0.45"),
+            array(true, "", ""),
+            array(true, new PrintableDate(), "to string"),
+            array(false, null),
+            array(false, array()),
+        );
+
+        foreach ($provider as $case) {
+            $expected = $case[0];
+            $item     = $case[1];
+
+            $result = $rexl->invoke($route, $item);
+
+            $this->assertEquals($expected, $result);
+
+            if ($expected) {
+                ob_start();
+                echo $item;
+
+                $strval = ob_get_clean();
+
+                $this->assertEquals($strval, $case[2]);
+            }
+        }
     }
 }

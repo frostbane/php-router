@@ -69,7 +69,7 @@ class Route
         $this->name       = isset($config['name']) ? $config['name'] : null;
         $this->parameters = isset($config['parameters']) ? $config['parameters'] : array();
         $this->filters    = isset($config['filters']) ? $config['filters'] : array();
-        $action           = explode('::', $this->config['_controller']);
+        $action           = isset ($this->config['_controller']) ? explode('::', $this->config['_controller']) : array();
         $this->class      = isset($action[0]) ? $action[0] : null;
         $this->action     = isset($action[1]) ? $action[1] : null;
     }
@@ -235,6 +235,11 @@ class Route
         return array_merge($arguments, $parameters);
     }
 
+    private function canBeEchoed($var)
+    {
+        return method_exists($var, '__toString') || (is_scalar($var) && !is_null($var));
+    }
+
     public function dispatch($instance = null)
     {
         is_null($instance) and $instance = new $this->class();
@@ -245,14 +250,18 @@ class Route
 
         if (empty($this->action) || trim($this->action) === '') {
             // __invoke on a class
-            call_user_func_array($instance, $param);
+            $result = call_user_func_array($instance, $param);
         } else {
-            call_user_func_array(array($instance, $this->action), $param);
+            $result = call_user_func_array(array($instance, $this->action), $param);
         }
 
-        $result = ob_get_clean();
+        if ($this->canBeEchoed($result)) {
+            echo $result;
+        }
 
-        return $result;
+        $buffer = ob_get_clean();
+
+        return $buffer;
     }
 
     public function getAction()
