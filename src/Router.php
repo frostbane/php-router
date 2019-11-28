@@ -113,6 +113,11 @@ class Router
         $foundRoute = null;
         $params     = array();
 
+        // must be unit testing
+        if($currentDir === "." || "..") {
+            $currentDir = "";
+        }
+
         foreach ($this->routes->all() as $routes) {
             // compare server request method with route's allowed http methods
             if (!in_array($requestMethod, (array)$routes->getMethods(), true)) {

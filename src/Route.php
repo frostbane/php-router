@@ -133,13 +133,15 @@ class Route
 
     public function getRegex()
     {
-        return preg_replace_callback('/(:\w+)/', array(&$this, 'substituteFilter'), $this->url);
+        $url = preg_quote($this->url);
+
+        return preg_replace_callback('/(\\\\(:\w+))/', array(&$this, 'substituteFilter'), $url);
     }
 
     private function substituteFilter($matches)
     {
-        if (isset($matches[1], $this->filters[$matches[1]])) {
-            return $this->filters[$matches[1]];
+        if (isset($matches[1], $this->filters[$matches[2]])) {
+            return $this->filters[$matches[2]];
         }
 
         return '([\w-%]+)';
