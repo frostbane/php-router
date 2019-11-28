@@ -92,9 +92,9 @@ class Router
             return false;
         }
 
-        $action = $route->getValidRouteAction();
+        $controller = $route->getValidController();
 
-        return $action !== null;
+        return $controller !== null;
     }
 
     /**

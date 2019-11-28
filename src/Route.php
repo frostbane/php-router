@@ -49,7 +49,7 @@ class Route
     private $parametersByName;
 
     /**
-     * @var string
+     * @var null|string
      */
     private $action;
 
@@ -57,6 +57,11 @@ class Route
      * @var array
      */
     private $config;
+
+    /**
+     * @var null|string
+     */
+    private $class;
 
     /**
      * @param       $resource
@@ -152,17 +157,16 @@ class Route
         $this->parameters = $parameters;
     }
 
-    public function getValidRouteAction()
+    public function getValidController()
     {
-        $action = explode('::', $this->config['_controller']);
-        $class  = @$action[0];
-        $method = @$action[1];
+        $class  = $this->class;
+        $method = $this->action;
 
         if ( !class_exists($class)) {
             return null;
         }
 
-        if (empty($action[1]) || trim($action[1]) === '') {
+        if (empty($method) || trim($method) === '') {
             $method = "__invoke";
         }
 
@@ -185,17 +189,18 @@ class Route
     {
         is_null($instance) and $instance = new $this->class();
 
-        if ($this->parametersByName) {
-            $this->parameters = array($this->parameters);
-        }
+        // todo figure out what parametersByName is for
+        $param = $this->parametersByName ?
+            array($this->parameters) :
+            $this->parameters;
 
         ob_start();
 
         if (empty($this->action) || trim($this->action) === '') {
             // __invoke on a class
-            call_user_func_array($instance, $this->parameters);
+            call_user_func_array($instance, $param);
         } else {
-            call_user_func_array(array($instance, $this->action), $this->parameters);
+            call_user_func_array(array($instance, $this->action), $param);
         }
 
         $result = ob_get_clean();
@@ -206,5 +211,10 @@ class Route
     public function getAction()
     {
         return $this->action;
+    }
+
+    public function getClass()
+    {
+        return $this->class;
     }
 }

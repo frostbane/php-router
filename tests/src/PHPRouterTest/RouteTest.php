@@ -1,96 +1,168 @@
 <?php
-/**
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * This software consists of voluntary contributions made by many individuals
- * and is licensed under the MIT license.
- */
+
 namespace PHPRouterTest\Test;
 
 use PHPRouter\Route;
+use PHPRouter\Test\Fixtures\InvokableController;
 use PHPUnit_Framework_TestCase;
 
 class RouteTest extends PHPUnit_Framework_TestCase
 {
+    private $routeUsing__invoke;
     private $routeWithParameters;
+    private $routeInvalid;
 
     protected function setUp()
     {
+        $this->routeUsing__invoke = new Route(
+            '/home/:user/:id',
+            array(
+                '_controller' => '\PHPRouter\Test\Fixtures\InvokableController',
+                'methods'     => array(
+                    'GET',
+                ),
+            )
+        );
+
         $this->routeWithParameters = new Route(
-            '/page/:page_id',
+            '/page/:page_id/:page_size',
             array(
                 '_controller' => '\PHPRouter\Test\Fixtures\SomeController::page',
-                'methods' => array(
-                    'GET'
+                'methods'     => array(
+                    'GET',
                 ),
-                'target' => 'thisIsAString',
-                'name' => 'page'
+                'target'      => 'thisIsAString',
+                'name'        => 'page',
+            )
+        );
+
+        $this->routeInvalid = new Route(
+            '/test',
+            array(
+                '_controller' => '\PHPRouter\Test\Fixtures\TestController::page',
+                'methods'     => array(
+                    'GET',
+                ),
+                'target'      => 'thisIsAString',
+                'name'        => 'page',
             )
         );
     }
 
     public function testGetUrl()
     {
-        self::assertEquals('/page/:page_id', $this->routeWithParameters->getUrl());
+        $this->assertEquals('/page/:page_id/:page_size', $this->routeWithParameters->getUrl());
     }
 
     public function testSetUrl()
     {
         $this->routeWithParameters->setUrl('/pages/:page_name/');
-        self::assertEquals('/pages/:page_name/', $this->routeWithParameters->getUrl());
+        $this->assertEquals('/pages/:page_name/', $this->routeWithParameters->getUrl());
 
         $this->routeWithParameters->setUrl('/pages/:page_name');
-        self::assertEquals('/pages/:page_name/', $this->routeWithParameters->getUrl());
+        $this->assertEquals('/pages/:page_name/', $this->routeWithParameters->getUrl());
     }
 
     public function testGetMethods()
     {
-        self::assertEquals(array('GET'), $this->routeWithParameters->getMethods());
+        $this->assertEquals(array('GET'), $this->routeWithParameters->getMethods());
     }
 
     public function testSetMethods()
     {
         $this->routeWithParameters->setMethods(array('POST'));
-        self::assertEquals(array('POST'), $this->routeWithParameters->getMethods());
+        $this->assertEquals(array('POST'), $this->routeWithParameters->getMethods());
 
         $this->routeWithParameters->setMethods(array('GET', 'POST', 'PUT', 'DELETE'));
-        self::assertEquals(array('GET', 'POST', 'PUT', 'DELETE'), $this->routeWithParameters->getMethods());
+        $this->assertEquals(array('GET', 'POST', 'PUT', 'DELETE'), $this->routeWithParameters->getMethods());
     }
 
     public function testGetTarget()
     {
-        self::assertEquals('thisIsAString', $this->routeWithParameters->getTarget());
+        $this->assertEquals('thisIsAString', $this->routeWithParameters->getTarget());
     }
 
     public function testSetTarget()
     {
         $this->routeWithParameters->setTarget('ThisIsAnotherString');
-        self::assertEquals('ThisIsAnotherString', $this->routeWithParameters->getTarget());
+        $this->assertEquals('ThisIsAnotherString', $this->routeWithParameters->getTarget());
     }
 
     public function testGetName()
     {
-        self::assertEquals('page', $this->routeWithParameters->getName());
+        $this->assertEquals('page', $this->routeWithParameters->getName());
     }
 
     public function testSetName()
     {
         $this->routeWithParameters->setName('pageroute');
-        self::assertEquals('pageroute', $this->routeWithParameters->getName());
+        $this->assertEquals('pageroute', $this->routeWithParameters->getName());
     }
 
     public function testGetAction()
     {
-        self::assertEquals('page', $this->routeWithParameters->getAction());
+        $this->assertEquals('page', $this->routeWithParameters->getAction());
+        $this->assertEquals(null, $this->routeUsing__invoke->getAction());
+    }
+
+    public function testGetClass()
+    {
+        $this->assertEquals('\PHPRouter\Test\Fixtures\SomeController', $this->routeWithParameters->getClass());
+        $this->assertEquals('\PHPRouter\Test\Fixtures\InvokableController', $this->routeUsing__invoke->getClass());
+    }
+
+    public function testGetValidController()
+    {
+        $this->assertEquals("\PHPRouter\Test\Fixtures\SomeController::page",
+                            $this->routeWithParameters->getValidController());
+        $this->assertNull($this->routeInvalid->getValidController());
+    }
+
+    public function testSetGetParameters()
+    {
+        $param = array("page_id" => 123);
+        $this->routeWithParameters->setParameters($param);
+
+        $this->assertEquals($param, $this->routeWithParameters->getParameters());
+    }
+
+    public function testGetRegex()
+    {
+        $regex = $this->routeWithParameters->getRegex();
+
+        $this->assertEquals("/page/([\\w-%]+)/([\\w-%]+)", $regex);
+    }
+
+    public function testGetFilterRegex()
+    {
+        $filters = array(
+            ":user" => "([A-Z][a-z]+)",
+            ":id"   => "([1-9]\\d)",
+        );
+
+        $this->routeUsing__invoke->setFilters($filters);
+
+        $regex = $this->routeUsing__invoke->getRegex();
+
+        $this->assertEquals("/home/([A-Z][a-z]+)/([1-9]\\d)", $regex);
+    }
+
+    public function testDispatch()
+    {
+        $message = "welcome";
+        $param   = array(
+            "id"   => 1,
+            "user" => "akane",
+        );
+
+        $this->routeUsing__invoke->setParameters($param);
+
+        $this->assertEquals(" {$param['id']}:{$param['user']}", $this->routeUsing__invoke->dispatch());
+
+        $instance = new InvokableController();
+
+        $instance->message = $message;
+
+        $this->assertEquals("$message {$param['id']}:{$param['user']}", $this->routeUsing__invoke->dispatch($instance));
     }
 }
