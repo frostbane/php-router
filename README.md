@@ -1,10 +1,5 @@
 # PHP Router class
 
-[![Latest Stable Version](https://poser.pugx.org/dannyvankooten/php-router/v/stable)](https://packagist.org/packages/dannyvankooten/php-router) 
-[![Total Downloads](https://poser.pugx.org/dannyvankooten/php-router/downloads)](https://packagist.org/packages/dannyvankooten/php-router) 
-[![Latest Unstable Version](https://poser.pugx.org/dannyvankooten/php-router/v/unstable)](https://packagist.org/packages/dannyvankooten/php-router) 
-[![License](https://poser.pugx.org/dannyvankooten/php-router/license)](https://packagist.org/packages/dannyvankooten/php-router)
-
 A simple Rails inspired PHP router class.
 
 * Usage of different HTTP Methods
@@ -20,7 +15,7 @@ A simple Rails inspired PHP router class.
 # Easy to install with **composer**
 
 ```sh
-$ composer require dannyvankooten/php-router
+$ composer require frostbane/php-router
 ```
 
 ## Usage

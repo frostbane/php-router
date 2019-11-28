@@ -6,7 +6,7 @@
         "routing",
         "rest"
     ],
-    "homepage"    : "https://github.com/dannyvankooten/PHP-Router",
+    "homepage"    : "https://github.com/frostbane/php-router",
     "license"     : "MIT",
     "authors"     : [
         {
