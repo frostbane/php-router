@@ -118,7 +118,13 @@ class Router
             $currentDir = "";
         }
 
-        foreach ($this->routes->all() as $routes) {
+        $allRoutes = $this->routes->all();
+
+        // reverse search, last registered route will overwrite
+        // previously registered route
+        for ($i = count($allRoutes) - 1; $i >= 0; $i--) {
+            $routes = $allRoutes[$i];
+
             // compare server request method with route's allowed http methods
             if (!in_array($requestMethod, (array)$routes->getMethods(), true)) {
                 continue;

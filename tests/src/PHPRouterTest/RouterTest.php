@@ -225,6 +225,36 @@ class RouterTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    public function testRouteOverwrite()
+    {
+        $collection = new RouteCollection();
+
+        $collection->attachRoute(new Route('/test', array(
+            '_controller' => '\PHPRouter\Test\Fixtures\CustomController::index',
+            'methods'     => 'GET',
+            'name'        => 'test_page',
+        )));
+        $collection->attachRoute(new Route('/test', array(
+            '_controller' => '\PHPRouter\Test\Fixtures\CustomController::_404',
+            'methods'     => 'GET',
+            'name'        => '404',
+        )));
+
+        $router = new Router($collection);
+
+        $_SERVER["REQUEST_URI"]    = "/test";
+        $_SERVER["REQUEST_METHOD"] = "GET";
+
+        $hasRoute = $router->requestHasValidRoute();
+        $route = $router->getRequestRoute();
+
+        $this->assertTrue($hasRoute);
+        $this->assertEquals("404", $route->getName());
+
+        unset($_SERVER["REQUEST_URI"]);
+        unset($_SERVER["REQUEST_METHOD"]);
+    }
+
     public function testParseConfig()
     {
         $config = Config::loadFromFile(__DIR__ . '/../../Fixtures/router.yaml');
