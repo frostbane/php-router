@@ -23,4 +23,9 @@ final class CustomController
     {
         echo "home $this->config";
     }
+
+    public function _404()
+    {
+        return "cannot find page";
+    }
 }
