@@ -77,20 +77,41 @@ class Router
     }
 
     /**
-     * check if the request has a valid route
-     *
-     * @return bool
+     * @return Route
      */
-    public function requestHasValidRoute()
+    private function getMatchingRequestRoute()
     {
         list($requestMethod, $requestUrl) = $this->getRequestUrlAndMethod();
 
         /** @var Route $route */
         list($route,) = $this->findRoute($requestUrl, $requestMethod);
 
-        if ($route === null) {
-            return false;
-        }
+        return $route;
+    }
+
+    /**
+     * check if the request has a matching route.
+     *
+     * does not check if the class exists or not
+     *
+     * @see Router::requestHasValidRoute()
+     */
+    public function requestHasRoute()
+    {
+        $route = $this->getMatchingRequestRoute();
+
+        /** @var Route $route */
+        return $route !== null;
+    }
+
+    /**
+     * check if the request has a valid route
+     *
+     * @return bool
+     */
+    public function requestHasValidRoute()
+    {
+        $route = $this->getMatchingRequestRoute();
 
         $controller = $route->getValidController();
 
