@@ -154,7 +154,69 @@ class RouterTest extends PHPUnit_Framework_TestCase
         $this->assertTrue($hasRoute);
         $this->assertNotNull($route);
         $this->assertEquals("index", $route->getAction());
+    }
 
+    public function testGetMatchingRoute()
+    {
+        $collection = new RouteCollection();
+
+        $collection->attachRoute(new Route('/index', array(
+            '_controller' => '\123NonExistingController::index',
+            'methods'     => 'GET',
+            'name'        => 'default',
+        )));
+        $collection->attachRoute(new Route('/help', array(
+            '_controller' => '\123NonExistingController::help',
+            'methods'     => 'GET',
+            'name'        => 'help',
+        )));
+
+        $router = new Router($collection);
+
+        $_SERVER["REQUEST_URI"]    = "/index";
+        $_SERVER["REQUEST_METHOD"] = "GET";
+
+        $route    = null;
+        $hasRoute = $router->requestHasRoute();
+
+        if ($hasRoute) {
+            $route = $router->getRequestRoute();
+        }
+
+        unset($_SERVER["REQUEST_URI"]);
+        unset($_SERVER["REQUEST_METHOD"]);
+
+        $this->assertTrue($hasRoute);
+        $this->assertNotNull($route);
+        $this->assertEquals("index", $route->getAction());
+    }
+
+    public function testNotGetMatchingRoute()
+    {
+        $collection = new RouteCollection();
+
+        $collection->attachRoute(new Route('/index', array(
+            '_controller' => '\123NonExistingController::index',
+            'methods'     => 'GET',
+            'name'        => 'default',
+        )));
+        $collection->attachRoute(new Route('/help', array(
+            '_controller' => '\123NonExistingController::help',
+            'methods'     => 'GET',
+            'name'        => 'help',
+        )));
+
+        $router = new Router($collection);
+
+        $_SERVER["REQUEST_URI"]    = "/home";
+        $_SERVER["REQUEST_METHOD"] = "GET";
+
+        $hasRoute = $router->requestHasRoute();
+
+        unset($_SERVER["REQUEST_URI"]);
+        unset($_SERVER["REQUEST_METHOD"]);
+
+        $this->assertFalse($hasRoute);
     }
 
     private function serverProvider()
